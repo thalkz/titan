@@ -3,40 +3,23 @@ import 'dart:math';
 import 'package:grpc/grpc.dart';
 
 import '../generated/combat.pbgrpc.dart';
-import '../generated/greeter.pbgrpc.dart';
 
-void main(List<String> arguments) async {
-  final channel = ClientChannel("localhost",
-      port: 50051, options: const ChannelOptions(credentials: ChannelCredentials.insecure()));
-  final greeterStub = GreeterClient(channel);
+void main(List<String> args) async {
+  final channel = ClientChannel(
+    "localhost",
+    port: 50051,
+    options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
+  );
   final combatStub = CombatClient(channel);
 
-  // try {
-  //   await _listenServerMonologue(stub);
-  // } catch (error) {
-  //   print('Server monologue error: $error');
-  // }
-
-  // try {
-  //   await _sendClientMonologue(stub);
-  // } catch (error) {
-  //   print('Server monologue error: $error');
-  // }
-
-  // try {
-  //   await Future.wait(
-  //     List.generate(10000, (index) => _makeConversation(stub))
-  //   );
-  // } catch (error) {
-  //   print('Server monologue error: $error');
-  // }
+  int userCount = int.tryParse(args[0]) ?? 1;
+  int actionsCount = int.tryParse(args[1]) ?? 1;
 
   try {
-    await _fightTitan(combatStub);
+    await Future.wait(List.generate(userCount, (index) => _fight(combatStub, actionsCount)));
   } catch (error) {
-    print('Server monologue error: $error');
+    print('Server error: $error');
   }
-
   await channel.shutdown();
 }
 
@@ -56,49 +39,19 @@ Stream<PlayerAction> generateActions(String playerId, int count) async* {
       action: _getAction(i, count),
       playerId: playerId,
     );
-    await Future.delayed(Duration(seconds: 1));
+    final rnd = Random().nextInt(1000);
+    await Future.delayed(Duration(milliseconds: rnd));
   }
 }
 
-Future<void> _fightTitan(CombatClient stub) async {
+Future<void> _fight(CombatClient stub, int actionsCount) async {
   final rnd = Random().nextInt(10000);
   String playerId = "player#$rnd";
-
-  final actions = generateActions(playerId, 20);
-  final combatStates = stub.fight(actions);
+  final actions = generateActions(playerId, actionsCount + 2);
+   final combatStates = stub.fight(actions, options: CallOptions(timeout: Duration(seconds: 30)));
+  int maxConnectedPlayers = 0;
   await for (final state in combatStates) {
-    print('Combat state: $state');
+    maxConnectedPlayers = max(maxConnectedPlayers, state.playerCount);
+    // print("connected: ${state.playerCount}, max: $maxConnectedPlayers (${state.titanId} ${state.titanHp}hp)");
   }
-}
-
-Stream<HelloRequest> generateRequests(int count) async* {
-  for (int i = 0; i < count; i++) {
-    final request = HelloRequest(name: "Request #$i");
-    await Future.delayed(Duration(seconds: 1));
-    yield request;
-  }
-}
-
-Future<void> _makeConversation(GreeterClient stub) async {
-  final requestStream = generateRequests(10);
-  final responseStream = stub.conversation(requestStream);
-  await for (final response in responseStream) {
-    print('Got message ${response.message}');
-  }
-}
-
-Future<void> _sendClientMonologue(GreeterClient stub) async {
-  final stream =
-      Stream<HelloRequest>.periodic(Duration(seconds: 1), (index) => HelloRequest(name: "player$index")).take(5);
-
-  final reply = await stub.clientMonologue(stream, options: CallOptions(timeout: Duration(seconds: 60)));
-  print("Reply: $reply");
-}
-
-Future<void> _listenServerMonologue(GreeterClient stub) {
-  final request = HelloRequest(name: "Thalkz");
-  var subscription = stub.serverMonologue(request).listen((event) {
-    print('Response: $event');
-  });
-  return subscription.asFuture();
 }

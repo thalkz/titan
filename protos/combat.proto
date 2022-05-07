@@ -19,5 +19,6 @@ message PlayerAction {
 message CombatState {
     string titan_id = 1;
     int32 titan_hp = 2;
-    repeated string player_id = 3;
+    repeated string player_ids = 3;
+    int32 player_count = 4;
 }
