@@ -2,7 +2,8 @@ import 'dart:math';
 
 import 'package:grpc/grpc.dart';
 
-import '../generated/combat.pbgrpc.dart';
+import 'protos/combat.pbgrpc.dart';
+
 
 void main(List<String> args) async {
   final channel = ClientChannel(
