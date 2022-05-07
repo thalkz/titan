@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = "thalkz.com/titan/greeter";
+
+service Greeter {
+    rpc SayHello(HelloRequest) returns (HelloReply) {}
+
+    rpc ServerMonologue(HelloRequest) returns (stream HelloReply) {}
+
+    rpc ClientMonologue(stream HelloRequest) returns (HelloReply) {}
+
+    rpc Conversation(stream HelloRequest) returns (stream HelloReply) {}
+}
+
+message HelloRequest {
+    string name = 1;
+}
+
+message HelloReply {
+    string message = 1;
+}

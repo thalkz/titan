@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option go_package = "thalkz.com/titan/combat";
+
+service Combat {
+    rpc Fight(stream PlayerAction) returns (stream CombatState) {}
+}
+
+message PlayerAction {
+    string player_id = 1;
+    enum ActionType {
+        START = 0;
+        LEAVE = 1;
+        ATTACK = 2;
+    }
+    ActionType action = 2;
+}
+
+message CombatState {
+    string titan_id = 1;
+    int32 titan_hp = 2;
+    repeated string player_id = 3;
+}
